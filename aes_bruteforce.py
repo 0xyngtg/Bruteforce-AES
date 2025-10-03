@@ -1,5 +1,5 @@
 import pyAesCrypt
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 import threading
 import argparse
@@ -66,16 +66,19 @@ def run_threads():
                         if i%1000== 0:
                             print(f"[*] Passwords tried: {i}")
                 
-                    if future.result() is not None:
-                        found_event.set()
-                        return future.result()
-                
-                if not futures and future.result()== None:
+                if not futures:
                     print("[-] Password not found!")
                     break
+
+                for future in as_completed(futures):
+                    result = future.result()
+                    if result is not None:
+                        found_event.set()
+                        return result
                 
                 if not found_event.is_set():
                     time.sleep(0.1)
+    return None
 
 if __name__ == "__main__":
     wordlist= args.wordlist
